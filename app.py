@@ -11,7 +11,7 @@ def calcular_retefuente_ley(ingreso_gravable, salud, pension, solidaridad):
     tope_exento_mensual = uvt_valor * 65.8
     if renta_exenta > tope_exento_mensual:
         renta_exenta = tope_exento_mensual
-        
+    
     base_final_gravable = base_intermedia - renta_exenta
     base_en_uvt = base_final_gravable / uvt_valor
     
@@ -26,25 +26,18 @@ def calcular_retefuente_ley(ingreso_gravable, salud, pension, solidaridad):
         
     return retencion_uvt * uvt_valor
 
-# --- MANEJO DE ESTADO (PARA LIMPIAR) ---
-if 'calculado' not in st.session_state:
-    st.session_state.calculado = False
-
-def limpiar_cantidades():
-    st.session_state.calculado = True
-
 st.title("📊 Calculadora de Nómina Personal")
 
 # --- FORMULARIO DE ENTRADA ---
 with st.sidebar.form("nomina_form", clear_on_submit=True):
     st.header("📋 Configuración del Mes")
     
-    sueldo_basico = st.number_input("Sueldo Básico Pactado", value=6138000, step=1)
-    aux_alimentacion = st.number_input("Auxilio Alimentación S/P", value=355900, step=1)
+    # Formato moneda visualizado en el label
+    sueldo_basico = st.number_input("Sueldo Básico Pactado ($6,138,000)", value=6138000, step=1)
+    aux_alimentacion = st.number_input("Auxilio Alimentación S/P ($355,900)", value=355900, step=1)
     
     st.divider()
     st.subheader("⏰ Cantidad de Horas")
-    # Al usar clear_on_submit=True, estos campos volverán a 0.0 tras pulsar el botón
     c_dom_fest = st.number_input("Cant. Dominical Fest Nocturno (1212)", value=0.0, step=0.01, format="%.2f")
     c_dom_ord = st.number_input("Cant. Dominical Ord Diurno (1214)", value=0.0, step=0.01, format="%.2f")
     c_rec_noc = st.number_input("Cant. Recargo Nocturno (M220)", value=0.0, step=0.01, format="%.2f")
@@ -62,15 +55,13 @@ with st.sidebar.form("nomina_form", clear_on_submit=True):
 if submitted:
     valor_hora = sueldo_basico / 240
     
-    # Factores de la imagen
+    # Factores ajustados para coincidir con el desprendible
     val_dom_fest_noc = valor_hora * c_dom_fest * 2.3464
     val_dom_ord_diu = valor_hora * c_dom_ord * 1.9593
     val_rec_noc = valor_hora * c_rec_noc * 0.3814
     
-    # IBC
+    # IBC y Ley
     ibc = sueldo_basico + val_dom_fest_noc + val_dom_ord_diu + val_rec_noc
-    
-    # Ley
     salud = ibc * 0.04
     pension = ibc * 0.04
     solidaridad = ibc * 0.01
@@ -83,14 +74,7 @@ if submitted:
     total_deducido = salud + pension + solidaridad + retefuente_auto + desc_prepaga + desc_iva_prepaga
     neto_a_pagar = total_devengado - total_deducido
 
-    # --- RESULTADOS ---
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Total Devengado", f"${total_devengado:,.0f}")
-    c2.metric("Total Deducido", f"${total_deducido:,.0f}")
-    c3.metric("Neto a Pagar", f"${neto_a_pagar:,.0f}")
-
-    st.divider()
-
+    # --- TABLA DE DETALLE ---
     datos = [
         ["1000", "Sueldo Básico", 30.00, sueldo_basico, 0, 0],
         ["1212", "Dominical Fest Nocturno", c_dom_fest, val_dom_fest_noc, 0, 0],
@@ -109,13 +93,23 @@ if submitted:
 
     df = pd.DataFrame(datos, columns=["Codigo", "Descripción", "Cantidad", "Devengado", "Deducido", "Beneficios"])
     
+    # Formateo visual de la tabla
     df_style = df.copy()
     df_style["Cantidad"] = df_style["Cantidad"].map("{:.2f}".format)
     for col in ["Devengado", "Deducido", "Beneficios"]:
         df_style[col] = df_style[col].apply(lambda x: f"${x:,.0f}" if x != 0 else "0")
 
     st.table(df_style)
-    st.success(f"**Neto Final Recibido: ${neto_a_pagar:,.0f}**")
+
+    # --- TOTALES EN LA PARTE INFERIOR ---
+    st.divider()
+    col1, col2, col3 = st.columns(3)
+    col1.metric("TOTAL DEVENGADO", f"${total_devengado:,.0f}")
+    col2.metric("TOTAL DEDUCIDO", f"${total_deducido:,.0f}")
+    col3.subheader(f"NETO A PAGAR: ${neto_a_pagar:,.0f}")
+    
+    st.success(f"Cálculo completado con éxito. Las cantidades de horas han sido reiniciadas.")
 
 else:
-    st.info("👈 Ingresa los datos y presiona 'CALCULAR NÓMINA'. Las cantidades se limpiarán después del cálculo.")
+    st.info("👈 Ingresa las cantidades y el sueldo en el panel lateral. Presiona 'CALCULAR NÓMINA' para generar el desglose.")
+
