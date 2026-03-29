@@ -26,7 +26,7 @@ def calcular_retefuente_ley(ingreso_gravable, salud, pension, solidaridad):
         
     return retencion_uvt * uvt_valor
 
-st.title("📊 Calculadora de Nómina Personal")
+st.title("📊 Calculadora de Nómina 📚")
 
 # --- FORMULARIO DE ENTRADA ---
 with st.sidebar.form("nomina_form", clear_on_submit=True):
@@ -49,7 +49,7 @@ with st.sidebar.form("nomina_form", clear_on_submit=True):
     ben_prepaga = st.number_input("Beneficio Prepagada (1610)", value=256114)
     ben_prepaga_iva = st.number_input("Beneficio Prepagada IVA (1619)", value=12805)
     
-    submitted = st.form_submit_button("🚀 CALCULAR NÓMINA")
+    submitted = st.form_submit_button("🟰 CALCULAR NÓMINA")
 
 # --- PROCESAMIENTO ---
 if submitted:
