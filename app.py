@@ -26,21 +26,22 @@ def calcular_retefuente_ley(ingreso_gravable, salud, pension, solidaridad):
         
     return retencion_uvt * uvt_valor
 
-st.title("📊 Calculadora de Nómina 📚")
+# --- TÍTULO CENTRADO ---
+st.markdown("<h1 style='text-align: center;'>📊 Calculadora de Nómina 📚</h1>", unsafe_allow_html=True)
 
 # --- FORMULARIO DE ENTRADA ---
 with st.sidebar.form("nomina_form", clear_on_submit=True):
     st.header("📋 Configuración del Mes")
     
-    # Formato moneda visualizado en el label
     sueldo_basico = st.number_input("Sueldo Básico Pactado ($6,138,000)", value=6138000, step=1)
     aux_alimentacion = st.number_input("Auxilio Alimentación S/P ($355,900)", value=355900, step=1)
     
     st.divider()
     st.subheader("⏰ Cantidad de Horas")
-    c_dom_fest = st.number_input("Cant. Dominical Fest Nocturno (1212)", value=0.0, step=0.01, format="%.2f")
-    c_dom_ord = st.number_input("Cant. Dominical Ord Diurno (1214)", value=0.0, step=0.01, format="%.2f")
-    c_rec_noc = st.number_input("Cant. Recargo Nocturno (M220)", value=0.0, step=0.01, format="%.2f")
+    # Usamos value=None para que las casillas aparezcan vacías al iniciar
+    c_dom_fest = st.number_input("Cant. Dominical Fest Nocturno (1212)", value=None, placeholder="0.00", step=0.01, format="%.2f")
+    c_dom_ord = st.number_input("Cant. Dominical Ord Diurno (1214)", value=None, placeholder="0.00", step=0.01, format="%.2f")
+    c_rec_noc = st.number_input("Cant. Recargo Nocturno (M220)", value=None, placeholder="0.00", step=0.01, format="%.2f")
     
     st.divider()
     st.subheader("💸 Otros Descuentos")
@@ -49,27 +50,28 @@ with st.sidebar.form("nomina_form", clear_on_submit=True):
     ben_prepaga = st.number_input("Beneficio Prepagada (1610)", value=256114)
     ben_prepaga_iva = st.number_input("Beneficio Prepagada IVA (1619)", value=12805)
     
-    submitted = st.form_submit_button("🟰 CALCULAR NÓMINA")
+    submitted = st.form_submit_button("CALCULAR NÓMINA 🟰")
 
 # --- PROCESAMIENTO ---
 if submitted:
+    # Validar que si el usuario dejó vacío, se asuma 0 para el cálculo
+    c_dom_fest_v = c_dom_fest if c_dom_fest is not None else 0.0
+    c_dom_ord_v = c_dom_ord if c_dom_ord is not None else 0.0
+    c_rec_noc_v = c_rec_noc if c_rec_noc is not None else 0.0
+
     valor_hora = sueldo_basico / 240
     
-    # Factores ajustados para coincidir con el desprendible
-    val_dom_fest_noc = valor_hora * c_dom_fest * 2.3464
-    val_dom_ord_diu = valor_hora * c_dom_ord * 1.9593
-    val_rec_noc = valor_hora * c_rec_noc * 0.3814
+    val_dom_fest_noc = valor_hora * c_dom_fest_v * 2.3464
+    val_dom_ord_diu = valor_hora * c_dom_ord_v * 1.9593
+    val_rec_noc = valor_hora * c_rec_noc_v * 0.3814
     
-    # IBC y Ley
     ibc = sueldo_basico + val_dom_fest_noc + val_dom_ord_diu + val_rec_noc
     salud = ibc * 0.04
     pension = ibc * 0.04
     solidaridad = ibc * 0.01
     
-    # Retefuente Auto
     retefuente_auto = calcular_retefuente_ley(ibc, salud, pension, solidaridad)
     
-    # Totales
     total_devengado = ibc + aux_alimentacion
     total_deducido = salud + pension + solidaridad + retefuente_auto + desc_prepaga + desc_iva_prepaga
     neto_a_pagar = total_devengado - total_deducido
@@ -77,10 +79,10 @@ if submitted:
     # --- TABLA DE DETALLE ---
     datos = [
         ["1000", "Sueldo Básico", 30.00, sueldo_basico, 0, 0],
-        ["1212", "Dominical Fest Nocturno", c_dom_fest, val_dom_fest_noc, 0, 0],
-        ["1214", "Dominical Ord Diurno", c_dom_ord, val_dom_ord_diu, 0, 0],
+        ["1212", "Dominical Fest Nocturno", c_dom_fest_v, val_dom_fest_noc, 0, 0],
+        ["1214", "Dominical Ord Diurno", c_dom_ord_v, val_dom_ord_diu, 0, 0],
         ["13A2", "Aux. Alimentacion S/P", 30.00, aux_alimentacion, 0, 0],
-        ["M220", "Recargo Nocturno", c_rec_noc, val_rec_noc, 0, 0],
+        ["M220", "Recargo Nocturno", c_rec_noc_v, val_rec_noc, 0, 0],
         ["7418", "Desc. Prepagada Colmedica", 0.00, 0, desc_prepaga, 0],
         ["7473", "Dto Prepa IVA LAN", 0.00, 0, desc_iva_prepaga, 0],
         ["T000", "Descuento Salud", 30.00, 0, salud, 0],
@@ -93,7 +95,6 @@ if submitted:
 
     df = pd.DataFrame(datos, columns=["Codigo", "Descripción", "Cantidad", "Devengado", "Deducido", "Beneficios"])
     
-    # Formateo visual de la tabla
     df_style = df.copy()
     df_style["Cantidad"] = df_style["Cantidad"].map("{:.2f}".format)
     for col in ["Devengado", "Deducido", "Beneficios"]:
@@ -113,3 +114,5 @@ if submitted:
 else:
     st.info("👈 Ingresa las cantidades y el sueldo en el panel lateral. Presiona 'CALCULAR NÓMINA' para generar el desglose.")
 
+# --- LÍNEA DE CRÉDITO ---
+st.markdown("<br><hr><center><p style='color: gray;'>Created by: Dairo Romero</p></center>", unsafe_allow_html=True)
