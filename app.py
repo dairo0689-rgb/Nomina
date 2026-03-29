@@ -38,7 +38,6 @@ with st.sidebar.form("nomina_form", clear_on_submit=True):
     
     st.divider()
     st.subheader("⏰ Cantidad de Horas")
-    # Usamos value=None para que las casillas aparezcan vacías al iniciar
     c_dom_fest = st.number_input("Cant. Dominical Fest Nocturno (1212)", value=None, placeholder="0.00", step=0.01, format="%.2f")
     c_dom_ord = st.number_input("Cant. Dominical Ord Diurno (1214)", value=None, placeholder="0.00", step=0.01, format="%.2f")
     c_rec_noc = st.number_input("Cant. Recargo Nocturno (M220)", value=None, placeholder="0.00", step=0.01, format="%.2f")
@@ -54,7 +53,6 @@ with st.sidebar.form("nomina_form", clear_on_submit=True):
 
 # --- PROCESAMIENTO ---
 if submitted:
-    # Validar que si el usuario dejó vacío, se asuma 0 para el cálculo
     c_dom_fest_v = c_dom_fest if c_dom_fest is not None else 0.0
     c_dom_ord_v = c_dom_ord if c_dom_ord is not None else 0.0
     c_rec_noc_v = c_rec_noc if c_rec_noc is not None else 0.0
@@ -108,11 +106,9 @@ if submitted:
     col1.metric("TOTAL DEVENGADO", f"${total_devengado:,.0f}")
     col2.metric("TOTAL DEDUCIDO", f"${total_deducido:,.0f}")
     col3.subheader(f"NETO A PAGAR: ${neto_a_pagar:,.0f}")
-    
-    st.success(f"Cálculo completado con éxito. Las cantidades de horas han sido reiniciadas.")
 
 else:
     st.info("👈 Ingresa las cantidades y el sueldo en el panel lateral. Presiona 'CALCULAR NÓMINA' para generar el desglose.")
 
-# --- LÍNEA DE CRÉDITO ---
-st.markdown("<br><hr><center><p style='color: gray;'>Created by: Dairo Romero</p></center>", unsafe_allow_html=True)
+# --- LÍNEA DE CRÉDITO A LA IZQUIERDA ---
+st.markdown("<br><hr><p style='color: gray; text-align: left;'>Created by: Dairo Romero</p>", unsafe_allow_html=True)
