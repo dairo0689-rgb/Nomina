@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Calculadora Nómina Mensual", page_icon="💰", layout="wide")
+st.set_page_config(page_title="Calculadora Nómina", page_icon="💰", layout="wide")
 
 # --- FUNCIONES DE CÁLCULO ---
 def calcular_retefuente_ley(ingreso_gravable, salud, pension, solidaridad):
