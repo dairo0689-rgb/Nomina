@@ -1,67 +1,111 @@
 import streamlit as st
 
-st.set_page_config(page_title="Calculadora de Nómina Personal", page_icon="💰")
+st.set_page_config(page_title="Calculadora Nómina por Horas", page_icon="💰")
 
-st.title("📊 Calculadora de Nómina Mensual")
-st.write("Ajusta los valores de la izquierda para calcular tu pago neto.")
+st.title("📊 Calculadora de Nómina Mensual (Cálculo por Horas)")
+st.write("Ajusta los sueldos y cantidades de horas en la izquierda.")
 
 # --- BARRA LATERAL (ENTRADAS) ---
-st.sidebar.header("Configuración de Ingresos")
+st.sidebar.header("1. Salario Base y Fijos")
+# Tomado de la imagen como base
+sueldo_basico_pactado = st.sidebar.number_input("Sueldo Básico Pactado (30 días)", value=6138000, step=10000)
+# Suponemos un mes laboral estándar de 240 horas para los cálculos legales
+horas_mes = 240
+valor_hora_ordinaria = sueldo_basico_pactado / horas_mes
 
-# Ingresos Fijos y Variables
-sueldo_basico = st.sidebar.number_input("Sueldo Básico", value=6138000)
-bono_desempeno = st.sidebar.number_input("Bono de Desempeño", value=4369581)
-aux_alimentacion = st.sidebar.number_input("Auxilio Alimentación (S/P)", value=372200)
+bono_desempeno = st.sidebar.number_input("Bono de Desempeño", value=4369581, step=10000)
+aux_alimentacion = st.sidebar.number_input("Auxilio Alimentación (S/P)", value=372200, step=10000)
 
-st.sidebar.header("Recargos y Horas Extra")
-dominical_fest = st.sidebar.number_input("Dominical/Fest Nocturno ($)", value=629843)
-recargo_nocturno = st.sidebar.number_input("Recargo Nocturno ($)", value=1035090)
-extras_diurnas = st.sidebar.number_input("Horas Extra Diurnas ($)", value=17438)
-extras_nocturnas = st.sidebar.number_input("Horas Extra Nocturnas ($)", value=219713)
+st.sidebar.header("2. Cantidad de Horas (Recargos/Extras)")
+st.sidebar.markdown(f"**Valor Hora Ordinaria:** `${valor_hora_ordinaria:,.2f}`")
 
-st.sidebar.header("Deducciones Adicionales")
-prepaga_colmedica = st.sidebar.number_input("Prepagada Colmedica", value=128057)
-iva_prepaga = st.sidebar.number_input("IVA Prepagada", value=6402)
-retencion_fuente = st.sidebar.number_input("Retención en la Fuente", value=435000)
+# Ingreso de CANTIDADES (Horas), no de valores en pesos
+# Los porcentajes son los estándar legales en Colombia
+cant_dominical_fest_noct = st.sidebar.number_input("Cantidad Horas Dominical/Fest Nocturno (Factor 2.5)", value=10.50, step=0.5)
+cant_recargo_nocturno = st.sidebar.number_input("Cantidad Horas Recargo Nocturno (Factor 0.35)", value=106.00, step=1.0)
+cant_extras_diurnas = st.sidebar.number_input("Cantidad Horas Extras Diurnas (Factor 1.25)", value=0.50, step=0.1)
+cant_extras_nocturnas = st.sidebar.number_input("Cantidad Horas Extras Nocturnas (Factor 1.75)", value=4.50, step=0.5)
+
+st.sidebar.header("3. Deducciones Adicionales (Fijas)")
+prepaga_colmedica = st.sidebar.number_input("Prepagada Colmedica", value=128057, step=1000)
+iva_prepaga = st.sidebar.number_input("IVA Prepagada", value=6402, step=100)
+retencion_fuente = st.sidebar.number_input("Retención en la Fuente", value=435000, step=10000)
+
 
 # --- CÁLCULOS ---
-# El IBC (Ingreso Base de Cotización) usualmente excluye auxilios no prestacionales
-ibc = sueldo_basico + dominical_fest + recargo_nocturno + extras_diurnas + extras_nocturnas
 
-# Deducciones de Ley (4% salud, 4% pensión)
+# A. Cálculos de Recargos y Horas Extra (Valor Hora * Cantidad * Factor)
+# Usamos factores estándar de la ley colombiana para aproximar los valores de tu imagen
+valor_dominical_fest_noct = valor_hora_ordinaria * cant_dominical_fest_noct * 2.5
+valor_recargo_nocturno = valor_hora_ordinaria * cant_recargo_nocturno * 0.35
+valor_extras_diurnas = valor_hora_ordinaria * cant_extras_diurnas * 1.25
+valor_extras_nocturnas = valor_hora_ordinaria * cant_extras_nocturnas * 1.75
+
+# B. IBC (Ingreso Base de Cotización)
+# Es el Sueldo Básico + todos los recargos y extras. Excluye bono no prestacional y auxilio.
+ibc = sueldo_basico_pactado + valor_dominical_fest_noct + valor_recargo_nocturno + valor_extras_diurnas + valor_extras_nocturnas
+
+# C. Deducciones de Ley (4% salud, 4% pensión)
 desc_salud = ibc * 0.04
 desc_pension = ibc * 0.04
 
-# Fondo de Solidaridad (Aproximado según tabla legal si aplica, aquí lo mantenemos dinámico)
-# En tu imagen es aprox 0.5% - 1% del IBC
-desc_solidaridad = ibc * 0.01 if ibc > (1300000 * 4) else 0
+# D. Fondo de Solidaridad Pensional
+# Es una tabla progresiva. Para el nivel de ingresos de la imagen (~12M+), es el 1%.
+porcentaje_solidaridad = 0.01 if ibc > (1300000 * 4) else 0 # 1300000 aprox smmlv
+desc_solidaridad = ibc * porcentaje_solidaridad
 
+# E. Totales
 total_devengado = ibc + bono_desempeno + aux_alimentacion
 total_deducido = desc_salud + desc_pension + desc_solidaridad + prepaga_colmedica + iva_prepaga + retencion_fuente
 neto_a_pagar = total_devengado - total_deducido
 
+
 # --- VISUALIZACIÓN ---
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Devengado", f"${total_devengado:,.0f}")
-col2.metric("Total Deducciones", f"-${total_deducido:,.0f}")
-col3.metric("Neto a Recibir", f"${neto_a_pagar:,.0f}", delta_color="normal")
+# Tarjetas de resumen
+c1, c2, c3 = st.columns(3)
+c1.metric("Total Devengado", f"${total_devengado:,.0f}")
+c2.metric("Total Deducciones", f"-${total_deducido:,.0f}")
+c3.metric("Neto a Recibir", f"${neto_a_pagar:,.0f}")
 
 st.divider()
 
-### Detalle de Nómina
-st.subheader("Detalle del Cálculo")
-col_a, col_b = st.columns(2)
+# Sección de resultados detallados
+st.subheader("Simulación de Desprendible de Nómina")
 
-with col_a:
-    st.write("**Ingresos**")
-    st.write(f"Sueldo Base: ${sueldo_basico:,.0f}")
-    st.write(f"Bonos/Auxilios: ${bono_desempeno + aux_alimentacion:,.0f}")
-    st.write(f"Recargos/Extras: ${dominical_fest + recargo_nocturno + extras_diurnas + extras_nocturnas:,.0f}")
+# Usamos una tabla para que se parezca más a tu imagen
+import pandas as pd
 
-with col_b:
-    st.write("**Descuentos de Ley**")
-    st.write(f"Salud (4%): ${desc_salud:,.0f}")
-    st.write(f"Pensión (4%): ${desc_pension:,.0f}")
-    st.write(f"Solidaridad: ${desc_solidaridad:,.0f}")
+# Datos para la tabla detallada
+datos_devengado = {
+    "Descripción": ["Sueldo Básico (30 días)", "Dominical Fest Nocturno", "Bono de Desempeño", "Aux. Alimentación S/P", "Recargo Nocturno", "Hora Extra Diurna", "Hora Extra Nocturna"],
+    "Cantidad": ["30.00", f"{cant_dominical_fest_noct:.2f}", "0.00", "30.00", f"{cant_recargo_nocturno:.2f}", f"{cant_extras_diurnas:.2f}", f"{cant_extras_nocturnas:.2f}"],
+    "Valor": [sueldo_basico_pactado, valor_dominical_fest_noct, bono_desempeno, aux_alimentacion, valor_recargo_nocturno, valor_extras_diurnas, valor_extras_nocturnas]
+}
+df_devengado = pd.DataFrame(datos_devengado)
 
-st.info("Nota: Los cálculos de salud y pensión se basan en el IBC (Sueldo + Recargos + Extras).")
+datos_deducciones = {
+    "Descripción": ["Prepaga Colmedica", "IVA Prepagada", "Descuento Salud (4%)", "Descuento Pensión (4%)", "Descuento Solidaridad", "Retención en la Fuente"],
+    "Valor": [prepaga_colmedica, iva_prepaga, desc_salud, desc_pension, desc_solidaridad, retencion_fuente]
+}
+df_deducciones = pd.DataFrame(datos_deducciones)
+
+col_izq, col_der = st.columns(2)
+
+with col_izq:
+    st.markdown("**INGRESOS (Devengado)**")
+    # Formatear la columna Valor como moneda
+    df_devengado_show = df_devengado.copy()
+    df_devengado_show["Valor"] = df_devengado_show["Valor"].apply(lambda x: f"${x:,.0f}")
+    st.table(df_devengado_show)
+    st.markdown(f"**Subtotal Devengado:** `${total_devengado:,.0f}`")
+
+with col_der:
+    st.markdown("**EGRESOS (Deducido)**")
+    # Formatear la columna Valor como moneda
+    df_deducciones_show = df_deducciones.copy()
+    df_deducciones_show["Valor"] = df_deducciones_show["Valor"].apply(lambda x: f"${x:,.0f}")
+    st.table(df_deducciones_show)
+    st.markdown(f"**Subtotal Deducciones:** `${total_deducido:,.0f}`")
+
+st.info(f"**Cálculos legales basados en IBC de:** `${ibc:,.0f}`")
+st.success(f"### Neto a Pagar: **${neto_a_pagar:,.0f}**")
