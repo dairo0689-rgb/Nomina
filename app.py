@@ -111,4 +111,4 @@ else:
     st.info("👈 Ingresa las cantidades y el sueldo en el panel lateral. Presiona 'CALCULAR NÓMINA' para generar el desglose.")
 
 # --- LÍNEA DE CRÉDITO A LA IZQUIERDA ---
-st.markdown("<br><hr><p style='color: gray; text-align: left;'>Created by: Dairo Romero</p>", unsafe_allow_html=True)
+st.markdown("<br><hr><p style='color: black; text-align: right;'>Created by: Dairo Romero</p>", unsafe_allow_html=True)
